@@ -54,7 +54,7 @@ NSLog(args),\
 /** Enable/disable log redirection
  @param enabled New enable status
  */
-+(void)setLogRedirection:(BOOL)enabled;
++(void)setLogRedirectionEnabled:(BOOL)enabled;
 
 ///---------------------------------------------------------------------------------------
 /// @name Log file manipulation
