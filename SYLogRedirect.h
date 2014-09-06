@@ -56,6 +56,11 @@ NSLog(args),\
  */
 +(void)setLogRedirectionEnabled:(BOOL)enabled;
 
+/** To get the log path 
+ @return log file path, `nil` if log redirection is disabled
+ */
++(NSString *)logFilePath;
+
 ///---------------------------------------------------------------------------------------
 /// @name Log file manipulation
 ///---------------------------------------------------------------------------------------

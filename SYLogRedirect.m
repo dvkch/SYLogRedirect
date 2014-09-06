@@ -19,6 +19,12 @@
  @param overwrite Switch to overwrite previous file or not
  */
 +(void)openFile:(BOOL)overwrite;
+
+/** Same as `+logFilePath`, excepts it never returns `nil` even if log redirection is disabled
+ @return log file path
+ */
++(NSString*)logFilePath_private;
+
 @end
 
 
@@ -33,9 +39,13 @@ static BOOL _enabled;
 
 @implementation SYLogRedirect
 
++(NSString*)logFilePath_private {
+    return [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"/log.txt"];
+}
+
 +(void)openFile:(BOOL)overwrite {
     dispatch_sync(_queue, ^{
-        NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"/log.txt"];
+        NSString *path = [self logFilePath_private];
         
         // Create log file if not here
         NSFileManager *fm = [NSFileManager defaultManager];
@@ -67,6 +77,13 @@ static BOOL _enabled;
 
 +(void)setLogRedirectionEnabled:(BOOL)enabled {
     _enabled = enabled;
+}
+
++(NSString *)logFilePath {
+    if(!_enabled)
+        return nil;
+    
+    return [self logFilePath_private];
 }
 
 #pragma mark - Log file manipulation
