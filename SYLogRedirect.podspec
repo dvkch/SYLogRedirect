@@ -11,6 +11,6 @@ Pod::Spec.new do |s|
 
   s.xcconfig = { 'CLANG_MODULES_AUTOLINK' => 'YES' }
 
-  s.ios.platform = :ios, "5.0"
-  s.osx.platform = :osx, "10.6"
+  s.platform.ios = '5.0'
+  s.platform.osx = '10.6'
 end
