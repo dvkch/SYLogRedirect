@@ -8,71 +8,61 @@
 
 #import <Foundation/Foundation.h>
 
+NSInteger const SYLogType_AlwaysLog = -1;
+
+///---------------------------------------------------------------------------------------
+/// @name Functions
+///---------------------------------------------------------------------------------------
+
+/** Writes a line to the log file
+ @param type Value to be compared to a mask of enabled types
+ @param showDate Controls the presence of the date on the beginning of the line to write
+ @param format String to log as a format
+ */
+void SYLog(NSInteger type, BOOL showDate, NSString *format, ...);
+
+/** Writes a line to the log file
+ @param type Value to be compared to a mask of enabled types
+ @param showDate Controls the presence of the date on the beginning of the line to write
+ @param file Source file name, pass `__FILE__` as argument
+ @param line Source line number, pass `__LINE__` as argument
+ @param function Source function, pass `__PRETTY_FUNCTION__` as argument
+ @param format String to log as a format
+ */
+void SYLogWithFileLineAndMethod(NSInteger type, BOOL showDate, const char* file, int line, const char* function, NSString *format, ...);
+
+/** Enable/disable log redirection. Enabled by default
+ @param enabled New enable status
+ */
+void SYLogSetEnabled(BOOL enabled);
+
+/** Defines enabled types mask. By default: -1, aka all types
+ @param enabledTypesMask enabled types mask
+ */
+void SYLogSetEnabledTypesMask(NSInteger enabledTypesMask);
+
+/** To get the log path
+ @param nilIfDisabled If set to `YES` and logging is disabled the method will return `nil`
+ @return log file path
+ */
+NSString* SYLogFilePath(BOOL nilIfDisabled);
+
+/** Empties log file and reopens it to continue logging immediately */
+void SYLogClear();
 
 ///---------------------------------------------------------------------------------------
 /// @name Redirect Macros
 ///---------------------------------------------------------------------------------------
 
-/** Redirects NSLog to SYLogRedirect. This will mimic the debugger display.*/
-#define NSLog(args...) \
-NSLog(args),\
-[SYLogRedirect writeNSLogToLogAndDebug:[NSString stringWithFormat:args] startingWithDate:YES]
+/** Redirects SYLogFull to SYLogWithFileLineAndMethod. */
+#define SYLogFull(type, showDate, args...) SYLogWithFileLineAndMethod(type, showDate, __FILE__, __LINE__, __PRETTY_FUNCTION__, args)
 
-/** Redirects NSLog to SYLogRedirect.
- 
- Two lines will be written. The first will contain date, filename, line number and function name,
- the second will mimic the debugger output without filename
- */
-#define NSLogFull(args...) \
-NSLog(args),\
-[SYLogRedirect writeNSLogToLogAndDebug:[NSString stringWithFormat:@"\n%s:%d - %s\t", __FILE__, __LINE__, __PRETTY_FUNCTION__] startingWithDate:YES],\
-[SYLogRedirect writeNSLogToLogAndDebug:[NSString stringWithFormat:args] startingWithDate:NO]
+/** Redirects NSLog to SYLog. */
+#ifdef DEFINE_NSLOG_AS_SYLOG
+#define NSLog(args...) {NSLog(args);SYLog(SYLogType_AlwaysLog, YES, args);}
+#endif
 
-/** Once the header file imported every call to NSLog will be duplicated into a call to
- the native NSLog and a call to SYLogRedirect. The log will available in both debugger
- and a file on the device.
-
- A GCD queue is used to synchronize operations and prevent writing file emptying or
- opening file.
- */
-@interface SYLogRedirect : NSObject
-
-///---------------------------------------------------------------------------------------
-/// @name Initialization
-///---------------------------------------------------------------------------------------
-
-/** Class initialization.
- 
- Called once on first class method use. Creates the GCD queue for sync and opens the 
- log file in append mode. */
-+(void)initialize;
-
-///---------------------------------------------------------------------------------------
-/// @name Parameters
-///---------------------------------------------------------------------------------------
-
-/** Enable/disable log redirection
- @param enabled New enable status
- */
-+(void)setLogRedirectionEnabled:(BOOL)enabled;
-
-/** To get the log path 
- @return log file path, `nil` if log redirection is disabled
- */
-+(NSString *)logFilePath;
-
-///---------------------------------------------------------------------------------------
-/// @name Log file manipulation
-///---------------------------------------------------------------------------------------
-
-/** Empties log file and reopens it to continue logging immediately */
-+(void)emptyLogFile;
-
-/** Writes a line to the log file 
- 
- @param log Object to log. The result of description method is written to the file
- @param prependDate Controls the presence of the date on the beginning of the line to write
- */
-+(void)writeNSLogToLogAndDebug:(NSObject*)log startingWithDate:(BOOL)prependDate;
-
-@end
+/** Redirects NSLog to SYLogFull. */
+#ifdef DEFINE_NSLOG_AS_SYLOGFULL
+#define NSLog(args...) {NSLog(args);SYLogFull(SYLogType_AlwaysLog, YES, args);}
+#endif

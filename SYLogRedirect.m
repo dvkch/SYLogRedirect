@@ -8,44 +8,54 @@
 
 #import "SYLogRedirect.h"
 
-/** Category for private methods of SYLogRedirect */
-@interface SYLogRedirect ()
-
-///---------------------------------------------------------------------------------------
-/// @name Private methods of SYLogRedirect
-///---------------------------------------------------------------------------------------
-
-/** Opens the log file and overwrite it if desired
- @param overwrite Switch to overwrite previous file or not
- */
-+(void)openFile:(BOOL)overwrite;
-
-/** Same as `+logFilePath`, excepts it never returns `nil` even if log redirection is disabled
- @return log file path
- */
-+(NSString*)logFilePath_private;
-
-@end
-
-
 /* Static file handle to access log */
 static NSFileHandle* _fileHandle;
 /* Grand central dispatch queue for sync */
 static dispatch_queue_t _queue;
 /* Date formatter */
 static NSDateFormatter *_dateFormatter;
+/* Enabled types mask */
+static NSInteger _enabledTypesMask = SYLogType_AlwaysLog;
 /* Log enabled */
-static BOOL _enabled;
+static BOOL _enabled = YES;
 
-@implementation SYLogRedirect
-
-+(NSString*)logFilePath_private {
-    return [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"/log.txt"];
+dispatch_queue_t SYLogDispatchQueue()
+{
+    if(!_queue)
+        _queue = dispatch_queue_create([@"SYLogRedirect" UTF8String], DISPATCH_QUEUE_PRIORITY_DEFAULT);
+    
+    return _queue;
 }
 
-+(void)openFile:(BOOL)overwrite {
-    dispatch_sync(_queue, ^{
-        NSString *path = [self logFilePath_private];
+NSDateFormatter *SYLogDateFormatter()
+{
+    if(!_dateFormatter)
+    {
+        _dateFormatter = [[NSDateFormatter alloc] init];
+        [_dateFormatter setDateFormat:@"yyyy-MM-dd' 'HH:mm:ss.SSS' '"];
+    }
+    
+    return _dateFormatter;
+}
+
+NSString* SYLogFilePath(BOOL nilIfDisabled)
+{
+    if(nilIfDisabled && !_enabled)
+        return nil;
+    
+    return [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0]
+            stringByAppendingPathComponent:@"/log.txt"];
+}
+
+void SYLogSetEnabled(BOOL enabled)
+{
+    _enabled = enabled;
+}
+
+void SYLogOpenFile(BOOL overwrite)
+{
+    dispatch_sync(SYLogDispatchQueue(), ^{
+        NSString *path = SYLogFilePath(NO);
         
         // Create log file if not here
         NSFileManager *fm = [NSFileManager defaultManager];
@@ -58,56 +68,49 @@ static BOOL _enabled;
         if(_fileHandle)
             [_fileHandle seekToEndOfFile];
         else
-            NSLog(@"Couldn't open log file.");
+            printf("Couldn't open log file at path %s\n", [SYLogFilePath(NO) UTF8String]);
     });
 }
 
-#pragma mark - Initialization
-
-+(void)initialize {
-    [super initialize];
-    if (self) {
-        _queue = dispatch_queue_create([[@"SYLogRedirect" stringByAppendingString:[self description]] UTF8String], DISPATCH_QUEUE_PRIORITY_DEFAULT);
-        _dateFormatter = [[NSDateFormatter alloc] init];
-        [_dateFormatter setDateFormat:@"yyyy-MM-dd' 'HH:mm:ss.SSS' '"];
-    }
-}
-
-#pragma mark - Parameters
-
-+(void)setLogRedirectionEnabled:(BOOL)enabled {
-    _enabled = enabled;
-}
-
-+(NSString *)logFilePath {
-    if(!_enabled)
-        return nil;
-    
-    return [self logFilePath_private];
-}
-
-#pragma mark - Log file manipulation
-
-+(void)emptyLogFile {
-    [_fileHandle closeFile];
-    [self openFile:YES];
-}
-
-+(void)writeNSLogToLogAndDebug:(NSObject*)log startingWithDate:(BOOL)prependDate {
-    
+void SYLog(NSInteger type, BOOL showDate, NSString *format, ...)
+{
     if(!_enabled)
         return;
-
-    NSString *date = [_dateFormatter stringFromDate:[NSDate date]];
+    
+    if(type != SYLogType_AlwaysLog && _enabledTypesMask != SYLogType_AlwaysLog && !(_enabledTypesMask & type))
+        return;
     
     if(!_fileHandle)
-        [self openFile:NO];
-
+        SYLogOpenFile(NO);
+    
+    NSString *date = (showDate ? [SYLogDateFormatter() stringFromDate:[NSDate date]] : @"");
+    
+    va_list args;
+    va_start(args, format);
+    NSString *string = [[NSString alloc] initWithFormat:format arguments:args];
+    va_end(args);
+    
     dispatch_sync(_queue, ^{
-        [_fileHandle writeData:[[(prependDate ? date : @"") stringByAppendingString:[log description]] dataUsingEncoding:NSUTF8StringEncoding]];
-        [_fileHandle writeData:[@"\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [_fileHandle writeData:[[NSString stringWithFormat:@"%@%@\n", date, string] dataUsingEncoding:NSUTF8StringEncoding]];
     });
-    
 }
+
+void SYLogWithFileLineAndMethod(NSInteger type, BOOL showDate, const char* file, int line, const char* function, NSString *format, ...)
+{
+    NSString *string0 = [NSString stringWithFormat:@"\n%s:%d - %s", file, line, function];
     
-@end
+    va_list args;
+    va_start(args, format);
+    NSString *string1 = [[NSString alloc] initWithFormat:format arguments:args];
+    va_end(args);
+    
+    SYLog(type, NO,       string0);
+    SYLog(type, showDate, string1);
+}
+
+void SYLogClear()
+{
+    [_fileHandle closeFile];
+    SYLogOpenFile(YES);
+}
+
