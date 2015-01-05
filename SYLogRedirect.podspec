@@ -1,4 +1,6 @@
 Pod::Spec.new do |s|
+  s.ios.deployment_target = '5.0'
+  s.osx.deployment_target = '10.7'
   s.name     = 'SYLogRedirect'
   s.version  = '1.2'
   s.license  = 'Custom'
@@ -8,9 +10,5 @@ Pod::Spec.new do |s|
   s.source   = { :git => 'https://github.com/dvkch/SYLogRedirect.git' }
   s.source_files = 'SYLogRedirect.{h,m}'
   s.requires_arc = true
-
   s.xcconfig = { 'CLANG_MODULES_AUTOLINK' => 'YES' }
-
-  s.platform.ios = '5.0'
-  s.platform.osx = '10.6'
 end
