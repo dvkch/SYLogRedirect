@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name     = 'SYLogRedirect'
-  s.version  = '1.1'
+  s.version  = '1.2'
   s.license  = 'Custom'
   s.summary  = 'Log redirect tool'
   s.homepage = 'https://github.com/dvkch/SYLogRedirect'
