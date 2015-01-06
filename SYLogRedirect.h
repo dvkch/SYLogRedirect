@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-NSInteger const SYLogType_AlwaysLog = -1;
+extern NSInteger const SYLogType_AlwaysLog;
 
 ///---------------------------------------------------------------------------------------
 /// @name Functions

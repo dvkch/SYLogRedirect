@@ -8,6 +8,8 @@
 
 #import "SYLogRedirect.h"
 
+NSInteger const SYLogType_AlwaysLog = -1;
+
 /* Static file handle to access log */
 static NSFileHandle* _fileHandle;
 /* Grand central dispatch queue for sync */
