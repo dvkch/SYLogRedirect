@@ -45,8 +45,15 @@ NSString* SYLogFilePath(BOOL nilIfDisabled)
     if(nilIfDisabled && !_enabled)
         return nil;
     
-    return [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0]
-            stringByAppendingPathComponent:@"/log.txt"];
+    NSString *path = nil;
+#if TARGET_OS_IPHONE
+    path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
+#elif TARGET_OS_MAC
+    path = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES)[0]
+            stringByAppendingPathComponent:@"/Yuppie"];
+#endif
+    
+    return [path stringByAppendingPathComponent:@"/log.txt"];
 }
 
 void SYLogSetEnabled(BOOL enabled)
