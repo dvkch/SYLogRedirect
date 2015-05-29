@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '5.0'
   s.osx.deployment_target = '10.7'
   s.name     = 'SYLogRedirect'
-  s.version  = '1.2.4'
+  s.version  = '1.2.5'
   s.license  = 'Custom'
   s.summary  = 'Log redirect tool'
   s.homepage = 'https://github.com/dvkch/SYLogRedirect'
